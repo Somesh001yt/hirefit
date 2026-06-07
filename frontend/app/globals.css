@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* ── HireFit design tokens ── */
+:root {
+  --accent: #6366f1;
+  --accent-soft: #eef2ff;
+  --accent-border: #c7d2fe;
+  --radius: 10px;
+  --font-head: 'Manrope', sans-serif;
+
+  --rl-ink: #10131c;
+  --rl-sub: #5a6072;
+  --rl-line: #e6e7ec;
+  --rl-bg: #ffffff;
+  --rl-soft: #f5f6f9;
+  --rl-green: #16a34a;
+  --rl-green-soft: #e8f7ee;
+  --rl-amber: #d97706;
+}
+
+@theme {
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-secondary: #64748b;
+  --color-secondary-hover: #475569;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-background: #f5f6f9;
+  --color-surface: #ffffff;
+  --color-border: #e6e7ec;
+  --color-text-primary: #10131c;
+  --color-text-secondary: #5a6072;
+  --color-text-muted: #94a3b8;
+
+  --font-sans: 'Manrope', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  background-color: var(--rl-bg);
+  color: var(--rl-ink);
+  font-family: 'Manrope', sans-serif;
+}
+
+/* Score dial spin animation */
+@keyframes rl-spin {
+  to { transform: rotate(360deg); }
+}
+.rl-spin {
+  animation: rl-spin 0.9s linear infinite;
+}
+
+/* PDF print styles */
+@media print {
+  .rl-noprint { display: none !important; }
+  body { background: white; }
+  .rl-pdf-page {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    padding: 0.6in 0.75in !important;
+  }
+}
