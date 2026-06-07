@@ -50,19 +50,19 @@ function Logo({ size = 20, onClick }: { size?: number; onClick?: () => void }) {
   );
 }
 
-function PrimaryBtn({ children, onClick, disabled, size = 'md' }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; size?: 'sm' | 'md' | 'lg' }) {
+function PrimaryBtn({ children, onClick, disabled, size = 'md', className = '' }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; size?: 'sm' | 'md' | 'lg'; className?: string }) {
   const sz = { sm: { padding: '9px 16px', fontSize: 14 }, md: { padding: '13px 22px', fontSize: 15 }, lg: { padding: '15px 28px', fontSize: 16.5 } }[size];
   return (
-    <button onClick={disabled ? undefined : onClick} disabled={disabled} style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, lineHeight: 1, background: accent, color: '#fff', border: '1px solid transparent', boxShadow: disabled ? 'none' : `0 10px 22px -12px ${accent}`, transition: 'transform .12s, filter .12s', ...sz }}
+    <button onClick={disabled ? undefined : onClick} disabled={disabled} className={className} style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, lineHeight: 1, background: accent, color: '#fff', border: '1px solid transparent', boxShadow: disabled ? 'none' : `0 10px 22px -12px ${accent}`, transition: 'transform .12s, filter .12s', minHeight: 44, ...sz }}
       onMouseEnter={e => { if (!disabled) { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.04)'; } }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
     >{children}</button>
   );
 }
 
-function GhostBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+function GhostBtn({ children, onClick, className = '' }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
-    <button onClick={onClick} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13.5, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 9, padding: '10px 16px', cursor: 'pointer' }}>{children}</button>
+    <button onClick={onClick} className={className} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13.5, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 9, padding: '10px 16px', cursor: 'pointer', minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{children}</button>
   );
 }
 
@@ -137,16 +137,16 @@ function InputScreen({ jd, resume, setJd, setResume, onAnalyze, error }: {
   const panelStyle: React.CSSProperties = { background: '#fff', border: `1px solid ${line}`, borderRadius: 18, display: 'flex', flexDirection: 'column', overflow: 'hidden' };
   const headerStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${line}` };
   const iconStyle: React.CSSProperties = { width: 30, height: 30, borderRadius: 8, background: accentSoft, display: 'grid', placeItems: 'center', color: accent, fontWeight: 800, fontSize: 13, flexShrink: 0 };
-  const taStyle: React.CSSProperties = { flex: 1, border: 'none', outline: 'none', resize: 'none', padding: '16px 18px', fontFamily: "'Manrope', sans-serif", fontSize: 14, lineHeight: 1.6, color: ink, background: 'transparent', minHeight: 300 };
+  const taStyle: React.CSSProperties = { flex: 1, border: 'none', outline: 'none', resize: 'none', padding: '16px 18px', fontFamily: "'Manrope', sans-serif", fontSize: 14, lineHeight: 1.6, color: ink, background: 'transparent' };
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '36px 32px 60px' }}>
+    <div className="max-w-270 mx-auto px-4 md:px-8 pt-9 pb-16">
       <div style={{ textAlign: 'center', maxWidth: 580, margin: '0 auto 28px' }}>
-        <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Let's see how you match.</h1>
-        <p style={{ fontSize: 15.5, color: sub, fontWeight: 500, marginTop: 10, lineHeight: 1.5 }}>Paste the job you're targeting and your current resume. We'll find every keyword you're missing.</p>
+        <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>Let&apos;s see how you match.</h1>
+        <p style={{ fontSize: 15.5, color: sub, fontWeight: 500, marginTop: 10, lineHeight: 1.5 }}>Paste the job you&apos;re targeting and your current resume. We&apos;ll find every keyword you&apos;re missing.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, alignItems: 'stretch' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5 items-stretch">
         {/* JD panel */}
         <div style={panelStyle}>
           <div style={headerStyle}>
@@ -161,7 +161,7 @@ function InputScreen({ jd, resume, setJd, setResume, onAnalyze, error }: {
           </div>
           <textarea value={jd} onChange={e => setJd(e.target.value)}
             placeholder="Paste the full job description here — responsibilities, requirements, the works…"
-            spellCheck={false} style={taStyle} />
+            spellCheck={false} className="min-h-50 md:min-h-75" style={taStyle} />
         </div>
 
         {/* Resume panel */}
@@ -178,10 +178,10 @@ function InputScreen({ jd, resume, setJd, setResume, onAnalyze, error }: {
           </div>
           <textarea value={resume} onChange={e => setResume(e.target.value)}
             placeholder="Paste your resume text, or upload a PDF / DOCX / TXT file below…"
-            spellCheck={false} style={taStyle} />
+            spellCheck={false} className="min-h-50 md:min-h-75" style={taStyle} />
           <div style={{ borderTop: `1px solid ${line}`, padding: '11px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={onFile} style={{ display: 'none' }} />
-            <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: ink, background: soft, border: `1px solid ${line}`, borderRadius: 8, padding: '8px 13px', cursor: 'pointer' }}>
+            <button onClick={() => fileRef.current?.click()} className="flex-1 md:flex-none" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: ink, background: soft, border: `1px solid ${line}`, borderRadius: 8, padding: '8px 13px', cursor: 'pointer', minHeight: 44 }}>
               <span style={{ fontSize: 15 }}>⤓</span> Upload file
             </button>
             <span style={{ fontSize: 12, color: sub, fontWeight: 600 }}>PDF · DOCX · TXT</span>
@@ -189,9 +189,9 @@ function InputScreen({ jd, resume, setJd, setResume, onAnalyze, error }: {
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 28 }}>
+      <div className="flex flex-col items-center gap-3 mt-7">
         {error && <p style={{ fontSize: 13.5, color: '#dc2626', fontWeight: 600 }}>{error}</p>}
-        <PrimaryBtn size="lg" disabled={!ready} onClick={onAnalyze}>
+        <PrimaryBtn size="lg" disabled={!ready} onClick={onAnalyze} className="w-full sm:w-auto justify-center">
           {ready ? '⚡ Analyze match' : 'Add a job description and resume to continue'}
         </PrimaryBtn>
         <div style={{ fontSize: 12.5, color: sub, fontWeight: 600 }}>
@@ -240,16 +240,16 @@ function ResultsScreen({ result, onRewrite, onBack }: {
   const suggestions = buildSuggestions(result.missing_keywords);
 
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 32px 72px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+    <div className="max-w-270 mx-auto px-4 md:px-8 pt-8 pb-18">
+      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
         <div>
           <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600, color: accent, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Analysis complete</div>
-          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', margin: '5px 0 0' }}>Here's where you stand.</h1>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em', margin: '5px 0 0' }}>Here&apos;s where you stand.</h1>
         </div>
         <GhostBtn onClick={onBack}>← Edit inputs</GhostBtn>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '0.82fr 1.18fr', gap: 18, alignItems: 'start' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[0.82fr_1.18fr] gap-4.5 items-start">
         {/* Score card */}
         <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 18, padding: 26 }}>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
@@ -288,7 +288,7 @@ function ResultsScreen({ result, onRewrite, onBack }: {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {result.missing_keywords.map(k => <KeywordChip key={k} label={k} />)}
               </div>
-            ) : <p style={{ fontSize: 14, color: green, fontWeight: 600 }}>✓ No major keyword gaps — your resume already speaks the role's language.</p>}
+            ) : <p style={{ fontSize: 14, color: green, fontWeight: 600 }}>✓ No major keyword gaps — your resume already speaks the role&apos;s language.</p>}
           </div>
 
           <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 18, padding: 22 }}>
@@ -316,7 +316,7 @@ function ResultsScreen({ result, onRewrite, onBack }: {
       {suggestions.length > 0 && (
         <div style={{ marginTop: 26 }}>
           <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 17, fontWeight: 700, marginBottom: 13 }}>How to close the gap</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 13 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.25">
             {suggestions.map((s, i) => (
               <div key={i} style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 14, padding: '17px 19px', display: 'flex', gap: 13 }}>
                 <div style={{ width: 26, height: 26, borderRadius: 7, flexShrink: 0, background: accentSoft, color: accent, display: 'grid', placeItems: 'center', fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 12 }}>{i + 1}</div>
@@ -331,12 +331,12 @@ function ResultsScreen({ result, onRewrite, onBack }: {
       )}
 
       {/* CTA bar */}
-      <div style={{ marginTop: 28, background: ink, borderRadius: 18, padding: '24px 30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-7 px-6 py-6 md:px-7.5" style={{ background: ink, borderRadius: 18 }}>
         <div>
           <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 20, fontWeight: 700, color: '#fff' }}>Let HireFit rewrite it for you.</div>
-          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>We'll weave all {result.missing_keywords.length} missing keywords in naturally and hand you a polished PDF.</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 3 }}>We&apos;ll weave all {result.missing_keywords.length} missing keywords in naturally and hand you a polished PDF.</div>
         </div>
-        <PrimaryBtn size="lg" onClick={onRewrite}>⚡ Rewrite my resume → {ceiling}%</PrimaryBtn>
+        <PrimaryBtn size="lg" onClick={onRewrite} className="w-full sm:w-auto justify-center shrink-0">⚡ Rewrite my resume → {ceiling}%</PrimaryBtn>
       </div>
     </div>
   );
@@ -377,9 +377,9 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
   const latexSource = buildLatex(rewrittenResume);
 
   return (
-    <div style={{ maxWidth: 1140, margin: '0 auto', padding: '28px 32px 72px' }}>
+    <div className="max-w-285 mx-auto px-4 md:px-8 pt-7 pb-18">
       {/* Header row */}
-      <div className="rl-noprint" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      <div className="rl-noprint flex items-center justify-between mb-5 flex-wrap gap-3">
         <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
           <GhostBtn onClick={onBack}>← Results</GhostBtn>
           <div>
@@ -387,16 +387,16 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
             <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: '3px 0 0' }}>Your tailored resume</h1>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <GhostBtn onClick={() => setView(v => v === 'improved' ? 'source' : 'improved')}>{view === 'source' ? '◧ Preview' : '⟨⟩ LaTeX source'}</GhostBtn>
-          <PrimaryBtn onClick={printPDF}>⤓ Download PDF</PrimaryBtn>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <GhostBtn onClick={() => setView(v => v === 'improved' ? 'source' : 'improved')} className="flex-1 sm:flex-none">{view === 'source' ? '◧ Preview' : '⟨⟩ LaTeX source'}</GhostBtn>
+          <PrimaryBtn onClick={printPDF} className="flex-1 sm:flex-none justify-center">⤓ Download PDF</PrimaryBtn>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 22, alignItems: 'start' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5.5 items-start">
         {/* Preview pane */}
         <div style={{ background: soft, border: `1px solid ${line}`, borderRadius: 16, padding: '22px 20px', minHeight: 600 }}>
-          <div className="rl-noprint" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div className="rl-noprint flex items-center justify-between mb-5">
             <div style={{ display: 'flex', background: '#fff', border: `1px solid ${line}`, borderRadius: 9, padding: 3, gap: 2 }}>
               {(['improved', 'source'] as const).map(v => (
                 <button key={v} onClick={() => setView(v)} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, padding: '7px 13px', borderRadius: 7, border: 'none', cursor: 'pointer', background: view === v ? accent : 'transparent', color: view === v ? '#fff' : sub }}>
@@ -415,7 +415,7 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
         </div>
 
         {/* Side rail */}
-        <div className="rl-noprint" style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'sticky', top: 80 }}>
+        <div className="rl-noprint flex flex-col gap-3.5 lg:sticky lg:top-20">
           <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 14, padding: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: sub, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Projected match</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, marginTop: 9 }}>
@@ -437,7 +437,7 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
             </div>
           </div>
 
-          <PrimaryBtn onClick={printPDF}>⤓ Download PDF</PrimaryBtn>
+          <PrimaryBtn onClick={printPDF} className="w-full justify-center">⤓ Download PDF</PrimaryBtn>
           <button onClick={onBack} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: sub, background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}>Tweak the analysis again</button>
         </div>
       </div>
@@ -449,7 +449,7 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
 function ResumePage({ data }: { data: ResumeData }) {
   const serif = "'Newsreader', Georgia, 'Times New Roman', serif";
   return (
-    <div className="rl-pdf-page" style={{ background: '#fff', width: '100%', maxWidth: 720, margin: '0 auto', padding: '50px 56px', fontFamily: serif, color: '#141414', boxShadow: '0 16px 48px -18px rgba(16,19,28,0.28)', border: '1px solid #e6e7ec', borderRadius: 4 }}>
+    <div className="rl-pdf-page px-4 py-8 md:px-14 md:py-12.5" style={{ background: '#fff', width: '100%', maxWidth: 720, margin: '0 auto', fontFamily: serif, color: '#141414', boxShadow: '0 16px 48px -18px rgba(16,19,28,0.28)', border: '1px solid #e6e7ec', borderRadius: 4 }}>
       {/* Header */}
       <div style={{ textAlign: 'center', borderBottom: '2px solid #111', paddingBottom: 14 }}>
         <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 600, letterSpacing: '0.02em' }}>{data.name}</div>
@@ -470,7 +470,7 @@ function ResumePage({ data }: { data: ResumeData }) {
         <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#1a1a1a', borderBottom: '1px solid #111', paddingBottom: 3, marginBottom: 9 }}>Experience</div>
         {data.experience.map((job, i) => (
           <div key={i} style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
               <span style={{ fontSize: 14, fontWeight: 600 }}>{job.role} <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#333' }}>· {job.org}</span></span>
               <span style={{ fontSize: 12, color: '#555' }}>{job.dates}</span>
             </div>
@@ -648,27 +648,27 @@ export default function AnalyzePage() {
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Manrope', sans-serif" }}>
       {/* Sticky nav */}
       <div className="rl-noprint" style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${line}` }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+        <div className="max-w-285 mx-auto px-4 md:px-8 flex items-center justify-between h-16">
           <Logo onClick={() => router.push('/')} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <div className="flex items-center gap-2 md:gap-4.5">
             {screen !== 'input' && screen !== 'analyzing' && (
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="flex gap-1 sm:gap-1.5">
                 {(['input', 'results', 'rewrite'] as const).map((s, i) => {
                   const active = screen === s || (s === 'rewrite' && screen === 'rewriting');
                   const done = (s === 'input' && ['results', 'rewriting', 'rewrite', 'analyzing'].includes(screen)) ||
                     (s === 'results' && ['rewriting', 'rewrite'].includes(screen));
                   return (
-                    <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {i > 0 && <div style={{ width: 20, height: 1, background: line }} />}
+                    <div key={s} className="flex items-center gap-1 sm:gap-1.5">
+                      {i > 0 && <div className="w-3.5 sm:w-5 h-px" style={{ background: line }} />}
                       <div style={{ width: 28, height: 28, borderRadius: 99, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, background: done ? green : (active ? accent : line), color: (done || active) ? '#fff' : sub, transition: 'all .2s' }}>{done ? '✓' : i + 1}</div>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: active ? ink : sub }}>{s === 'input' ? 'Input' : s === 'results' ? 'Results' : 'Rewrite'}</span>
+                      <span className={active ? '' : 'hidden sm:inline'} style={{ fontSize: 12.5, fontWeight: 600, color: active ? ink : sub }}>{s === 'input' ? 'Input' : s === 'results' ? 'Results' : 'Rewrite'}</span>
                     </div>
                   );
                 })}
               </div>
             )}
-            <span style={{ fontSize: 13.5, color: sub, fontWeight: 600 }}>Hi, {user.name.split(' ')[0]}</span>
-            <button onClick={() => router.push('/')} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 8, padding: '7px 13px', cursor: 'pointer' }}>Home</button>
+            <span className="hidden sm:inline" style={{ fontSize: 13.5, color: sub, fontWeight: 600 }}>Hi, {user.name.split(' ')[0]}</span>
+            <button onClick={() => router.push('/')} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 8, padding: '7px 13px', cursor: 'pointer', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Home</button>
           </div>
         </div>
       </div>

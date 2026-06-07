@@ -33,7 +33,13 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Btn({ children, onClick, kind = 'primary', size = 'md' }: { children: React.ReactNode; onClick?: () => void; kind?: 'primary' | 'dark' | 'ghost'; size?: 'sm' | 'md' | 'lg' }) {
+function Btn({ children, onClick, kind = 'primary', size = 'md', className = '' }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  kind?: 'primary' | 'dark' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}) {
   const sizes = { md: { padding: '13px 22px', fontSize: 15.5 }, lg: { padding: '15px 28px', fontSize: 16.5 }, sm: { padding: '9px 15px', fontSize: 14 } };
   const kinds = {
     primary: { background: accent, color: '#fff', border: '1px solid transparent', boxShadow: `0 10px 22px -12px ${accent}` },
@@ -41,7 +47,10 @@ function Btn({ children, onClick, kind = 'primary', size = 'md' }: { children: R
     ghost: { background: '#fff', color: ink, border: `1px solid ${line}` },
   };
   return (
-    <button onClick={onClick} style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, borderRadius: 10, cursor: 'pointer', transition: 'transform .12s ease, filter .12s ease', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, lineHeight: 1, ...sizes[size], ...kinds[kind] }}
+    <button
+      onClick={onClick}
+      className={className}
+      style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, borderRadius: 10, cursor: 'pointer', transition: 'transform .12s ease, filter .12s ease', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, lineHeight: 1, minHeight: 44, ...sizes[size], ...kinds[kind] }}
       onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.04)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'none'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
     >{children}</button>
@@ -53,8 +62,6 @@ export default function LandingPage() {
   const { user } = useAuthContext();
 
   const handleStart = () => router.push(user ? '/analyze' : '/login');
-
-  const wrap: React.CSSProperties = { maxWidth: 1080, margin: '0 auto', padding: '0 32px' };
   const h: React.CSSProperties = { fontFamily: "'Manrope', sans-serif", letterSpacing: '-0.02em', margin: 0 };
 
   return (
@@ -62,9 +69,9 @@ export default function LandingPage() {
 
       {/* ── Nav ── */}
       <div style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${line}` }}>
-        <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68 }}>
+        <div className="max-w-270 mx-auto px-4 md:px-8 flex items-center justify-between h-17">
           <Logo />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div className="flex items-center gap-4 md:gap-7">
             {user ? (
               <Btn kind="dark" size="sm" onClick={handleStart}>Open app →</Btn>
             ) : (
@@ -78,18 +85,18 @@ export default function LandingPage() {
       </div>
 
       {/* ── Hero ── */}
-      <div style={{ ...wrap, paddingTop: 72, paddingBottom: 28, display: 'grid', gridTemplateColumns: '1.04fr 0.96fr', gap: 56, alignItems: 'center' }}>
+      <div className="max-w-270 mx-auto px-4 md:px-8 pt-12 pb-7 lg:pt-18 grid grid-cols-1 lg:grid-cols-[1.04fr_0.96fr] gap-10 lg:gap-14 items-center">
         <div>
           <Pill>AI-powered resume optimizer</Pill>
-          <h1 style={{ ...h, fontSize: 54, lineHeight: 1.04, fontWeight: 700, marginTop: 22 }}>
+          <h1 className="text-4xl md:text-[46px] lg:text-[54px]" style={{ ...h, lineHeight: 1.04, fontWeight: 700, marginTop: 22 }}>
             Make your resume<br />match the job —<br /><span style={{ color: accent }}>in 30 seconds.</span>
           </h1>
-          <p style={{ fontSize: 18, lineHeight: 1.55, color: sub, maxWidth: 440, marginTop: 22, fontWeight: 500 }}>
-            Paste a job description, drop in your resume. Get your fit score, the exact keywords you're missing, and an AI rewrite delivered as a polished PDF.
+          <p className="text-[15px] md:text-[18px]" style={{ lineHeight: 1.55, color: sub, maxWidth: 440, marginTop: 22, fontWeight: 500 }}>
+            Paste a job description, drop in your resume. Get your fit score, the exact keywords you&apos;re missing, and an AI rewrite delivered as a polished PDF.
           </p>
-          <div style={{ display: 'flex', gap: 12, marginTop: 30, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Btn kind="primary" size="lg" onClick={handleStart}>Optimize my resume →</Btn>
-            <Btn kind="ghost" size="lg" onClick={handleStart}>See how it works</Btn>
+          <div className="flex flex-col sm:flex-row gap-3 mt-8 items-stretch sm:items-center">
+            <Btn kind="primary" size="lg" onClick={handleStart} className="w-full sm:w-auto justify-center">Optimize my resume →</Btn>
+            <Btn kind="ghost" size="lg" onClick={handleStart} className="w-full sm:w-auto justify-center">See how it works</Btn>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 22, fontSize: 13, color: sub, fontWeight: 600 }}>
             <span style={{ display: 'flex' }}>{['#c7d2fe', '#a5b4fc', '#fcd9bd', '#bbf7d0'].map((c, i) => <span key={i} style={{ width: 24, height: 24, borderRadius: 99, background: c, border: '2px solid #fff', marginLeft: i ? -8 : 0 }} />)}</span>
@@ -104,7 +111,6 @@ export default function LandingPage() {
             <span style={{ fontSize: 12, fontWeight: 700, color: green, background: greenSoft, padding: '4px 10px', borderRadius: 99 }}>● Live</span>
           </div>
           <div style={{ display: 'flex', gap: 18, alignItems: 'center', background: '#fff', border: `1px solid ${line}`, borderRadius: 14, padding: 18 }}>
-            {/* Static score ring */}
             <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
               <svg viewBox="0 0 90 90" style={{ width: 90, height: 90, transform: 'rotate(-90deg)' }}>
                 <circle cx={45} cy={45} r={38} fill="none" stroke={line} strokeWidth={8} />
@@ -127,20 +133,20 @@ export default function LandingPage() {
               <span key={k} style={{ fontSize: 12.5, fontWeight: 600, color: accent, background: accentSoft, border: `1px solid ${accentBorder}`, padding: '6px 11px', borderRadius: 8 }}>+ {k}</span>
             ))}
           </div>
-          <div onClick={handleStart} style={{ cursor: 'pointer', marginTop: 16, background: ink, color: '#fff', textAlign: 'center', padding: '13px', borderRadius: 11, fontWeight: 700, fontSize: 14 }}>⚡ Rewrite resume with these keywords</div>
+          <div onClick={handleStart} style={{ cursor: 'pointer', marginTop: 16, background: ink, color: '#fff', textAlign: 'center', padding: '13px', borderRadius: 11, fontWeight: 700, fontSize: 14, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡ Rewrite resume with these keywords</div>
         </div>
       </div>
 
       {/* ── How it works ── */}
-      <div style={{ background: soft, borderTop: `1px solid ${line}`, borderBottom: `1px solid ${line}`, padding: '70px 0' }}>
-        <div style={wrap}>
+      <div className="py-12 md:py-[70px]" style={{ background: soft, borderTop: `1px solid ${line}`, borderBottom: `1px solid ${line}` }}>
+        <div className="max-w-270 mx-auto px-4 md:px-8">
           <Pill>How it works</Pill>
-          <h2 style={{ ...h, fontSize: 36, fontWeight: 700, marginTop: 18, maxWidth: 580 }}>From mismatch to interview-ready in three steps.</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 18, marginTop: 44 }}>
+          <h2 className="text-[24px] md:text-4xl" style={{ ...h, fontWeight: 700, marginTop: 18, maxWidth: 580 }}>From mismatch to interview-ready in three steps.</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4.5 mt-11">
             {[
               { n: '01', t: 'Paste the job', d: 'Drop in any job description. HireFit reads the requirements, responsibilities and the keywords recruiters and ATS systems scan for.' },
               { n: '02', t: 'Upload your resume', d: 'PDF, DOCX or plain text. We parse every section and compare it line-by-line against the role you actually want.' },
-              { n: '03', t: 'Get your rewrite', d: 'See your match score, the exact keywords you\'re missing, and a one-click AI rewrite delivered as a polished, ATS-safe PDF.' },
+              { n: '03', t: 'Get your rewrite', d: "See your match score, the exact keywords you're missing, and a one-click AI rewrite delivered as a polished, ATS-safe PDF." },
             ].map(s => (
               <div key={s.n} style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 16, padding: 26 }}>
                 <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 14, fontWeight: 700, color: accent, letterSpacing: '0.05em' }}>{s.n}</div>
@@ -153,19 +159,19 @@ export default function LandingPage() {
       </div>
 
       {/* ── Features ── */}
-      <div style={{ ...wrap, padding: '72px 32px' }}>
+      <div className="max-w-270 mx-auto px-4 md:px-8 py-14 md:py-18">
         <div style={{ textAlign: 'center', maxWidth: 600, margin: '0 auto 44px' }}>
           <Pill>Features</Pill>
-          <h2 style={{ ...h, fontSize: 36, fontWeight: 700, marginTop: 18 }}>Everything you need to beat the filter.</h2>
+          <h2 className="text-[24px] md:text-4xl" style={{ ...h, fontWeight: 700, marginTop: 18 }}>Everything you need to beat the filter.</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 18 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4.5">
           <div style={{ background: accent, color: '#fff', borderRadius: 18, padding: 32, position: 'relative', overflow: 'hidden' }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Match score</div>
             <div style={{ ...h, fontSize: 26, fontWeight: 700, marginTop: 10, maxWidth: 340, color: '#fff' }}>Know your fit before you apply.</div>
-            <p style={{ fontSize: 15, lineHeight: 1.55, opacity: 0.9, fontWeight: 500, marginTop: 12, maxWidth: 360 }}>A single number that tells you how closely your resume matches the role — and exactly what's dragging it down.</p>
+            <p style={{ fontSize: 15, lineHeight: 1.55, opacity: 0.9, fontWeight: 500, marginTop: 12, maxWidth: 360 }}>A single number that tells you how closely your resume matches the role — and exactly what&apos;s dragging it down.</p>
             <div style={{ position: 'absolute', right: -30, bottom: -30, width: 170, height: 170, borderRadius: 99, border: '22px solid rgba(255,255,255,0.14)' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 18 }}>
+          <div className="grid grid-rows-2 gap-4.5">
             {[
               { t: 'Missing keyword finder', d: 'Surfaces the skills, tools and phrases the JD expects but your resume omits.' },
               { t: 'One-click AI rewrite', d: 'Rewrites bullets to weave in keywords naturally — no keyword stuffing.' },
@@ -183,13 +189,13 @@ export default function LandingPage() {
       </div>
 
       {/* ── Before / after ── */}
-      <div style={{ background: soft, borderTop: `1px solid ${line}`, padding: '70px 0' }}>
-        <div style={wrap}>
+      <div className="py-12 md:py-[70px]" style={{ background: soft, borderTop: `1px solid ${line}` }}>
+        <div className="max-w-270 mx-auto px-4 md:px-8">
           <div style={{ textAlign: 'center', maxWidth: 600, margin: '0 auto 40px' }}>
             <Pill>Before / after</Pill>
-            <h2 style={{ ...h, fontSize: 36, fontWeight: 700, marginTop: 18 }}>The same experience, repositioned.</h2>
+            <h2 className="text-[24px] md:text-4xl" style={{ ...h, fontWeight: 700, marginTop: 18 }}>The same experience, repositioned.</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
             <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 16, padding: 26 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontSize: 11.5, fontWeight: 800, color: sub, background: '#eceef2', padding: '5px 10px', borderRadius: 7, letterSpacing: '0.06em' }}>BEFORE</span>
@@ -213,19 +219,19 @@ export default function LandingPage() {
       </div>
 
       {/* ── Bottom CTA ── */}
-      <div style={{ ...wrap, padding: '76px 32px' }}>
-        <div style={{ background: ink, borderRadius: 24, padding: '56px 44px', textAlign: 'center' }}>
-          <h2 style={{ ...h, fontSize: 38, fontWeight: 700, color: '#fff', maxWidth: 520, margin: '0 auto', lineHeight: 1.1 }}>Your next role is reading your resume right now.</h2>
+      <div className="max-w-270 mx-auto px-4 md:px-8 py-14 md:py-19">
+        <div className="px-6 py-12 md:px-11 md:py-14 text-center" style={{ background: ink, borderRadius: 24 }}>
+          <h2 className="text-[24px] md:text-[38px]" style={{ ...h, fontWeight: 700, color: '#fff', maxWidth: 520, margin: '0 auto', lineHeight: 1.1 }}>Your next role is reading your resume right now.</h2>
           <p style={{ fontSize: 16.5, color: 'rgba(255,255,255,0.7)', fontWeight: 500, marginTop: 16 }}>Make sure it says the right things.</p>
-          <div style={{ marginTop: 28 }}>
-            <Btn kind="primary" size="lg" onClick={handleStart}>Optimize my resume — free →</Btn>
+          <div className="mt-7">
+            <Btn kind="primary" size="lg" onClick={handleStart} className="w-full sm:w-auto justify-center">Optimize my resume — free →</Btn>
           </div>
         </div>
       </div>
 
       {/* ── Footer ── */}
       <div style={{ borderTop: `1px solid ${line}` }}>
-        <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72, fontSize: 13, color: sub, fontWeight: 600 }}>
+        <div className="max-w-270 mx-auto px-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 py-5 sm:h-18" style={{ fontSize: 13, color: sub, fontWeight: 600 }}>
           <Logo size={17} />
           <span>© 2026 HireFit · AI-powered resume optimization</span>
         </div>
