@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import Button from '@/components/ui/Button';
 
 function Field({ label, type, placeholder, value, onChange }: {
   label: string; type: string; placeholder: string;
@@ -51,9 +52,9 @@ export default function RegisterPage() {
             <Field label="Email" type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
             <Field label="Password" type="password" placeholder="••••••••" value={password} onChange={setPassword} />
             {error && <p className="text-sm text-danger font-semibold text-center">{error}</p>}
-            <button type="submit" disabled={submitting}
-              className="mt-1 w-full py-3 rounded-lg bg-primary text-white font-bold text-base cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:brightness-105 transition"
-            >{submitting ? 'Creating account…' : 'Create account →'}</button>
+            <Button type="submit" loading={submitting} fullWidth size="lg">
+              {submitting ? 'Creating account…' : 'Create account →'}
+            </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-text-secondary font-medium">

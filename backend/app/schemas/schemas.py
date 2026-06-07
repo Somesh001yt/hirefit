@@ -63,8 +63,8 @@ class ApplicationResponse(BaseModel):
 
 # AI schemas
 class MatchRequest(BaseModel):
-    resume_text: str = Field(min_length=50, max_length=5000)
-    jd_text: str = Field(min_length=50, max_length=5000)
+    resume_text: str = Field(min_length=50, max_length=15000)
+    jd_text: str = Field(min_length=50, max_length=15000)
     application_id: Optional[str] = None
 
 class RewriteRequest(BaseModel):

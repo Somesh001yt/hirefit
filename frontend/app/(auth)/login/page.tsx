@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import Button from '@/components/ui/Button';
 
 const accent = '#6366f1';
 const ink = '#10131c';
@@ -53,10 +54,9 @@ export default function LoginPage() {
               />
             </div>
             {error && <p style={{ fontSize: 13.5, color: '#dc2626', fontWeight: 600, textAlign: 'center', margin: 0 }}>{error}</p>}
-            <button type="submit" disabled={submitting} style={{ marginTop: 4, fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: 15.5, padding: '13px', borderRadius: 10, background: accent, color: '#fff', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, boxShadow: `0 8px 20px -10px ${accent}`, transition: 'transform .12s, filter .12s' }}
-              onMouseEnter={e => { if (!submitting) { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.06)'; } }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
-            >{submitting ? 'Signing in…' : 'Sign in →'}</button>
+            <Button type="submit" loading={submitting} fullWidth size="lg">
+              {submitting ? 'Signing in…' : 'Sign in →'}
+            </Button>
           </form>
 
           <p style={{ marginTop: 22, textAlign: 'center', fontSize: 13.5, color: sub, fontWeight: 500 }}>

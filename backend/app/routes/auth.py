@@ -1,3 +1,5 @@
+import asyncio
+from functools import partial
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -10,6 +12,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
 async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    loop = asyncio.get_event_loop()
+    # Run bcrypt in a thread so it doesn't block the async event loop
+    hashed = await loop.run_in_executor(None, hash_password, body.password)
+
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -17,7 +23,7 @@ async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)):
     user = User(
         name=body.name,
         email=body.email,
-        password=hash_password(body.password),
+        password=hashed,
     )
     db.add(user)
     await db.flush()
@@ -32,7 +38,16 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(body.password, user.password):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    loop = asyncio.get_event_loop()
+    # Run bcrypt verify in a thread so it doesn't block the async event loop
+    password_ok = await loop.run_in_executor(None, partial(verify_password, body.password, user.password))
+    if not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

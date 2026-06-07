@@ -12,7 +12,7 @@ from app.models.user import User
 bearer_scheme = HTTPBearer()
 
 def hash_password(password: str) -> str:
-    return _bcrypt.hashpw(password.encode("utf-8")[:72], _bcrypt.gensalt()).decode("utf-8")
+    return _bcrypt.hashpw(password.encode("utf-8")[:72], _bcrypt.gensalt(rounds=10)).decode("utf-8")
 
 def verify_password(plain: str, hashed: str) -> bool:
     return _bcrypt.checkpw(plain.encode("utf-8")[:72], hashed.encode("utf-8"))
