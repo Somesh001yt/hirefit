@@ -15,7 +15,7 @@ import {
   LoginPayload,
   RegisterPayload,
 } from '@/lib/endpoints';
-import { setAuthHeader, clearAuthHeader } from '@/lib/api';
+import api, { setAuthHeader, clearAuthHeader } from '@/lib/api';
 
 const USER_CACHE_KEY = 'auth_user';
 
@@ -50,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Ping backend health on every page load to wake it up from free-tier sleep
+    // before the user submits a form (fire-and-forget, errors are ignored)
+    api.get('/health').catch(() => {});
+
     const token = Cookies.get('token');
 
     if (!token) {

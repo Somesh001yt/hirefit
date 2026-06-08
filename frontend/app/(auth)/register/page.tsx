@@ -47,7 +47,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-surface rounded-2xl border border-border p-8 shadow-sm">
-          <form action={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={e => { e.preventDefault(); handleSubmit(); }} className="flex flex-col gap-4">
             <Field label="Full name" type="text" placeholder="Your name" value={name} onChange={setName} />
             <Field label="Email" type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
             <Field label="Password" type="password" placeholder="••••••••" value={password} onChange={setPassword} />

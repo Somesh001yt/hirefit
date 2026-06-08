@@ -36,7 +36,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ background: '#fff', borderRadius: 18, border: `1px solid ${line}`, padding: '32px 28px', boxShadow: '0 4px 24px -8px rgba(16,19,28,0.08)' }}>
-          <form action={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <form onSubmit={e => { e.preventDefault(); handleSubmit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontSize: 13.5, fontWeight: 700, color: ink }}>Email</label>
               <input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required
