@@ -944,8 +944,21 @@ export default function AnalyzePage() {
     if (!jd.trim() || !resume.trim()) return;
     setError(null);
     setScreen('analyzing');
+    const payload = { resume_text: resume, jd_text: jd };
     try {
-      const res = await aiEndpoints.match({ resume_text: resume, jd_text: jd });
+      let res;
+      try {
+        res = await aiEndpoints.match(payload);
+      } catch (firstErr: unknown) {
+        // Auto-retry once on cold start (no response, 502, or 503)
+        const status = (firstErr as { response?: { status?: number } }).response?.status;
+        if (!status || status === 502 || status === 503) {
+          await new Promise(r => setTimeout(r, 2500));
+          res = await aiEndpoints.match(payload);
+        } else {
+          throw firstErr;
+        }
+      }
       setMatchResult(res.data);
       setScreen('results');
     } catch (e: unknown) {
@@ -958,12 +971,20 @@ export default function AnalyzePage() {
   const handleRewrite = useCallback(async () => {
     if (!matchResult) return;
     setScreen('rewriting');
+    const payload = { resume_text: resume, jd_text: jd, missing_keywords: matchResult.missing_keywords };
     try {
-      const res = await aiEndpoints.rewriteResume({
-        resume_text: resume,
-        jd_text: jd,
-        missing_keywords: matchResult.missing_keywords,
-      });
+      let res;
+      try {
+        res = await aiEndpoints.rewriteResume(payload);
+      } catch (firstErr: unknown) {
+        const status = (firstErr as { response?: { status?: number } }).response?.status;
+        if (!status || status === 502 || status === 503) {
+          await new Promise(r => setTimeout(r, 2500));
+          res = await aiEndpoints.rewriteResume(payload);
+        } else {
+          throw firstErr;
+        }
+      }
       setRewriteResult(res.data.rewritten_resume as ResumeData);
       setScreen('rewrite');
     } catch (e: unknown) {
