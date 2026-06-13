@@ -41,8 +41,9 @@ export interface Application {
   company: string;
   role: string;
   status: ApplicationStatus;
-  url?: string;
+  jd_url?: string;
   notes?: string;
+  applied_at?: string;
   created_at: string;
 }
 
@@ -50,8 +51,9 @@ export interface ApplicationPayload {
   company: string;
   role: string;
   status: ApplicationStatus;
-  url?: string;
+  jd_url?: string;
   notes?: string;
+  applied_at?: string;
 }
 
 export interface MatchPayload {

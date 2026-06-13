@@ -50,24 +50,45 @@ You are a professional resume writer. Rewrite the ENTIRE resume below to be tail
 to the job description. Naturally weave in ALL of these missing keywords: {missing_keywords}.
 
 Rules:
-- Keep all original facts, dates, companies, and roles exactly as-is
+- Keep all original facts, dates, companies, roles, and projects exactly as-is
 - Only improve phrasing and add missing keywords naturally
+- If the original resume has no summary section, set "summary" to an empty string — do NOT invent one
+- If the original resume has a summary, rewrite it to max 2-3 sentences using keywords from the JD
+- Include ALL projects from the original resume in the "projects" array
+- Group skills into categories exactly as shown below
 - Return the result as valid JSON with this exact structure (no markdown, no commentary):
 {{
   "name": "<full name>",
   "title": "<professional title>",
-  "contact": ["<email>", "<phone>", "<location>"],
-  "summary": "<rewritten summary with keywords>",
+  "contact": ["<email>", "<phone>", "<city, country>"],
+  "summary": "<2-3 sentence rewritten summary, or empty string if original had none>",
   "experience": [
     {{
       "role": "<job title>",
-      "org": "<company>",
+      "org": "<company name>",
+      "location": "<city, country>",
       "dates": "<date range>",
       "bullets": ["<bullet 1>", "<bullet 2>"]
     }}
   ],
-  "skills": ["<skill1>", "<skill2>"],
-  "education": "<degree, institution>"
+  "projects": [
+    {{
+      "name": "<project name>",
+      "tech": "<comma-separated tech stack>",
+      "link": "<url or empty string>",
+      "bullets": ["<bullet 1>", "<bullet 2>"]
+    }}
+  ],
+  "skills": [
+    "Languages: <comma-separated list>",
+    "Frontend: <comma-separated list>",
+    "Backend: <comma-separated list>",
+    "Databases: <comma-separated list>",
+    "Testing: <comma-separated list>",
+    "Cloud & DevOps: <comma-separated list>",
+    "Tools & Practices: <comma-separated list>"
+  ],
+  "education": "<degree, institution, location, dates. Coursework: ...>"
 }}
 
 ORIGINAL RESUME:
@@ -79,24 +100,24 @@ JOB DESCRIPTION:
 
 
 async def _generate(prompt: str) -> str:
-    """Try each model in order, retrying once on transient 429s."""
+    """Try each model in order, retrying once on transient 429s.
+    generate_content() is synchronous — run it in a thread to avoid blocking the event loop.
+    """
     last_err: Exception = RuntimeError("No models available.")
     for model_name in _MODELS:
         model = genai.GenerativeModel(model_name)
         for attempt in range(2):          # 1 retry per model
             try:
-                response = model.generate_content(prompt)
+                response = await asyncio.to_thread(model.generate_content, prompt)
                 return response.text.strip()
             except ResourceExhausted as e:
                 last_err = e
                 if attempt == 0:
-                    # Back off briefly before the single retry
                     await asyncio.sleep(5)
                 else:
-                    # Quota truly exhausted for this model — try the next one
                     break
             except Exception as e:
-                raise e                   # Hard error — don't swallow it
+                raise e
     raise last_err
 
 

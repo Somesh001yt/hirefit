@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import { aiEndpoints, MatchResponse } from '@/lib/endpoints';
 import { extractTextFromPdf } from '@/lib/pdfExtract';
+import AppNav from '@/components/layout/AppNav';
+import ScoreDial from '@/components/ui/ScoreDial';
+import { generateResumePdf } from '@/components/resume/ResumePdf';
+import { splitByKeywords, splitWithBold } from '@/lib/helpers';
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const accent = '#6366f1';
@@ -24,7 +28,15 @@ type Screen = 'input' | 'analyzing' | 'results' | 'rewriting' | 'rewrite';
 interface ResumeSection {
   role: string;
   org: string;
+  location?: string;
   dates: string;
+  bullets: string[];
+}
+
+interface ResumeProject {
+  name: string;
+  tech: string;
+  link?: string;
   bullets: string[];
 }
 
@@ -34,21 +46,12 @@ interface ResumeData {
   contact: string[];
   summary: string;
   experience: ResumeSection[];
+  projects?: ResumeProject[];
   skills: string[];
   education: string;
 }
 
 // ── Shared primitives ──────────────────────────────────────────────────────────
-function Logo({ size = 20, onClick }: { size?: number; onClick?: () => void }) {
-  return (
-    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 9, cursor: onClick ? 'pointer' : 'default' }}>
-      <div style={{ width: size + 8, height: size + 8, borderRadius: 7, background: accent, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-        <div style={{ width: size * 0.55, height: size * 0.55, border: '2.5px solid #fff', borderRadius: 2, transform: 'rotate(45deg)' }} />
-      </div>
-      <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: size, fontWeight: 700, letterSpacing: '-0.02em', color: ink }}>HireFit</span>
-    </div>
-  );
-}
 
 function PrimaryBtn({ children, onClick, disabled, size = 'md', className = '' }: { children: React.ReactNode; onClick?: () => void; disabled?: boolean; size?: 'sm' | 'md' | 'lg'; className?: string }) {
   const sz = { sm: { padding: '9px 16px', fontSize: 14 }, md: { padding: '13px 22px', fontSize: 15 }, lg: { padding: '15px 28px', fontSize: 16.5 } }[size];
@@ -63,41 +66,6 @@ function PrimaryBtn({ children, onClick, disabled, size = 'md', className = '' }
 function GhostBtn({ children, onClick, className = '' }: { children: React.ReactNode; onClick?: () => void; className?: string }) {
   return (
     <button onClick={onClick} className={className} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13.5, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 9, padding: '10px 16px', cursor: 'pointer', minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{children}</button>
-  );
-}
-
-// Animated SVG score ring
-function ScoreDial({ value, size = 140, stroke = 11 }: { value: number; size?: number; stroke?: number }) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    let raf: number;
-    let start: number | null = null;
-    const dur = 1100;
-    const tick = (ts: number) => {
-      if (!start) start = ts;
-      const p = Math.min(1, (ts - start) / dur);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setV(Math.round(value * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: size, height: size, transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={line} strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={accent} strokeWidth={stroke}
-          strokeDasharray={c} strokeDashoffset={c * (1 - v / 100)} strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset .35s ease' }} />
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: size * 0.26, fontWeight: 700, color: ink, lineHeight: 1 }}>{v}<span style={{ fontSize: size * 0.14 }}>%</span></div>
-        <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 11, fontWeight: 700, color: sub, marginTop: 3 }}>MATCH</div>
-      </div>
-    </div>
   );
 }
 
@@ -368,10 +336,21 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
   onBack: () => void;
 }) {
   const [view, setView] = useState<'improved' | 'source'>('improved');
+  const [downloading, setDownloading] = useState(false);
 
-  const printPDF = () => {
-    document.body.classList.add('rl-printing');
-    setTimeout(() => { window.print(); document.body.classList.remove('rl-printing'); }, 60);
+  const downloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const blob = await generateResumePdf(rewrittenResume, addedKeywords);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${rewrittenResume.name.replace(/\s+/g, '_')}_resume.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const latexSource = buildLatex(rewrittenResume);
@@ -389,7 +368,7 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <GhostBtn onClick={() => setView(v => v === 'improved' ? 'source' : 'improved')} className="flex-1 sm:flex-none">{view === 'source' ? '◧ Preview' : '⟨⟩ LaTeX source'}</GhostBtn>
-          <PrimaryBtn onClick={printPDF} className="flex-1 sm:flex-none justify-center">⤓ Download PDF</PrimaryBtn>
+          <PrimaryBtn onClick={downloadPDF} disabled={downloading} className="flex-1 sm:flex-none justify-center">{downloading ? 'Generating…' : '⤓ Download PDF'}</PrimaryBtn>
         </div>
       </div>
 
@@ -410,34 +389,31 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
           {view === 'source' ? (
             <pre style={{ margin: 0, background: '#0e1117', color: '#cdd6e2', borderRadius: 10, padding: 18, fontFamily: "'JetBrains Mono', monospace", fontSize: 12, lineHeight: 1.65, overflow: 'auto', whiteSpace: 'pre-wrap' }}>{latexSource}</pre>
           ) : (
-            <ResumePage data={rewrittenResume} />
+            <ResumePage data={rewrittenResume} addedKeywords={addedKeywords} />
           )}
         </div>
 
         {/* Side rail */}
         <div className="rl-noprint flex flex-col gap-3.5 lg:sticky lg:top-20">
+
+          {/* Score card */}
           <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 14, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: sub, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Projected match</div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, marginTop: 9 }}>
-              <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 16, fontWeight: 700, color: sub, textDecoration: 'line-through' }}>{originalScore}%</span>
-              <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 36, fontWeight: 700, color: accent, lineHeight: 1 }}>{ceiling}%</span>
+            <div style={{ fontSize: 11, fontWeight: 700, color: sub, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Projected match</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 9, marginTop: 8 }}>
+              <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 15, fontWeight: 700, color: sub, textDecoration: 'line-through' }}>{originalScore}%</span>
+              <span style={{ fontFamily: "'Manrope', sans-serif", fontSize: 34, fontWeight: 700, color: accent, lineHeight: 1 }}>{ceiling}%</span>
             </div>
-            <div style={{ marginTop: 12, height: 7, background: soft, borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ marginTop: 11, height: 6, background: soft, borderRadius: 99, overflow: 'hidden' }}>
               <div style={{ width: `${ceiling}%`, height: '100%', background: accent, borderRadius: 99, transition: 'width 1s ease' }} />
             </div>
-            <div style={{ fontSize: 13, color: green, fontWeight: 700, marginTop: 10 }}>▲ +{ceiling - originalScore} points</div>
-          </div>
-
-          <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 14, padding: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: sub, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 11 }}>Keywords added ({addedKeywords.length})</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {addedKeywords.slice(0, 10).map(k => (
-                <span key={k} style={{ fontSize: 12, fontWeight: 600, color: accent, background: accentSoft, border: `1px solid ${accentBorder}`, padding: '5px 9px', borderRadius: 7 }}>✓ {k}</span>
-              ))}
+            <div style={{ fontSize: 12.5, color: green, fontWeight: 700, marginTop: 9 }}>▲ +{ceiling - originalScore} points
             </div>
           </div>
 
-          <PrimaryBtn onClick={printPDF} className="w-full justify-center">⤓ Download PDF</PrimaryBtn>
+          {/* What changed panel */}
+          <ChangesPanel resume={rewrittenResume} addedKeywords={addedKeywords} />
+
+          <PrimaryBtn onClick={downloadPDF} disabled={downloading} className="w-full justify-center">{downloading ? 'Generating…' : '⤓ Download PDF'}</PrimaryBtn>
           <button onClick={onBack} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: sub, background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}>Tweak the analysis again</button>
         </div>
       </div>
@@ -445,88 +421,447 @@ function RewriteScreen({ rewrittenResume, originalScore, ceiling, addedKeywords,
   );
 }
 
-// LaTeX-styled HTML resume preview
-function ResumePage({ data }: { data: ResumeData }) {
-  const serif = "'Newsreader', Georgia, 'Times New Roman', serif";
+// ── ChangesPanel: shows every updated bullet in the side rail ──────────────────
+function InlineHighlight({ text, keywords }: { text: string; keywords: string[] }) {
+  const segments = splitByKeywords(text, keywords);
   return (
-    <div className="rl-pdf-page px-4 py-8 md:px-14 md:py-12.5" style={{ background: '#fff', width: '100%', maxWidth: 720, margin: '0 auto', fontFamily: serif, color: '#141414', boxShadow: '0 16px 48px -18px rgba(16,19,28,0.28)', border: '1px solid #e6e7ec', borderRadius: 4 }}>
+    <>
+      {segments.map((seg, i) =>
+        seg.highlighted
+          ? <mark key={i} style={{ background: accentSoft, color: accent, borderRadius: 2, padding: '0 2px', fontWeight: 700, fontStyle: 'normal' }}>{seg.text}</mark>
+          : <span key={i}>{seg.text}</span>
+      )}
+    </>
+  );
+}
+
+interface ChangeEntry { section: string; text: string; }
+
+function collectChanges(resume: ResumeData, keywords: string[]): ChangeEntry[] {
+  if (!keywords.length) return [];
+  const kw = keywords.map(k => k.toLowerCase());
+  const hits = (t: string) => kw.some(k => t.toLowerCase().includes(k));
+  const out: ChangeEntry[] = [];
+
+  if (hits(resume.summary))
+    out.push({ section: 'Summary', text: resume.summary });
+
+  resume.experience.forEach(job => {
+    job.bullets.forEach(b => {
+      if (hits(b)) out.push({ section: `Experience · ${job.org}`, text: b });
+    });
+  });
+
+  (resume.projects ?? []).forEach(proj => {
+    proj.bullets.forEach(b => {
+      if (hits(b)) out.push({ section: `Projects · ${proj.name}`, text: b });
+    });
+  });
+
+  resume.skills.forEach(s => {
+    if (hits(s)) out.push({ section: 'Technical Skills', text: s });
+  });
+
+  return out;
+}
+
+function ChangesPanel({ resume, addedKeywords }: { resume: ResumeData; addedKeywords: string[] }) {
+  const entries = collectChanges(resume, addedKeywords);
+
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${line}`, borderRadius: 14, overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ textAlign: 'center', borderBottom: '2px solid #111', paddingBottom: 14 }}>
-        <div style={{ fontFamily: serif, fontSize: 30, fontWeight: 600, letterSpacing: '0.02em' }}>{data.name}</div>
-        <div style={{ fontFamily: serif, fontSize: 14.5, fontStyle: 'italic', color: '#444', marginTop: 4 }}>{data.title}</div>
-        <div style={{ fontSize: 12, color: '#333', marginTop: 8, display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
-          {data.contact.map((c, i) => <span key={i}>{c}</span>)}
+      <div style={{ padding: '14px 18px', borderBottom: `1px solid ${line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13.5, fontWeight: 700, color: ink }}>What changed</div>
+          <div style={{ fontSize: 11.5, color: sub, fontWeight: 500, marginTop: 2 }}>{entries.length} updated sentence{entries.length !== 1 ? 's' : ''}</div>
         </div>
+        <span style={{ fontSize: 11, fontWeight: 700, color: accent, background: accentSoft, border: `1px solid ${accentBorder}`, padding: '3px 9px', borderRadius: 99 }}>
+          {addedKeywords.length} keywords
+        </span>
       </div>
 
-      {/* Summary */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#1a1a1a', borderBottom: '1px solid #111', paddingBottom: 3, marginBottom: 8 }}>Summary</div>
-        <p style={{ fontSize: 14, lineHeight: 1.62, margin: 0 }}>{data.summary}</p>
-      </div>
-
-      {/* Experience */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#1a1a1a', borderBottom: '1px solid #111', paddingBottom: 3, marginBottom: 9 }}>Experience</div>
-        {data.experience.map((job, i) => (
-          <div key={i} style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>{job.role} <span style={{ fontStyle: 'italic', fontWeight: 400, color: '#333' }}>· {job.org}</span></span>
-              <span style={{ fontSize: 12, color: '#555' }}>{job.dates}</span>
+      {/* Entry list */}
+      <div style={{ maxHeight: 360, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+        {entries.length === 0 ? (
+          <div style={{ padding: '20px 18px', fontSize: 13, color: sub, fontWeight: 500 }}>
+            No specific bullets matched — keywords may be in the summary.
+          </div>
+        ) : entries.map((e, i) => (
+          <div
+            key={i}
+            style={{
+              padding: '12px 16px',
+              borderBottom: i < entries.length - 1 ? `1px solid ${line}` : 'none',
+              background: i % 2 === 0 ? '#fff' : soft,
+            }}
+          >
+            {/* Section label */}
+            <div style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9.5,
+              fontWeight: 700,
+              color: accent,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: 5,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: 99, background: accent, display: 'inline-block', flexShrink: 0 }} />
+              {e.section}
             </div>
-            <ul style={{ margin: '5px 0 0', paddingLeft: 18 }}>
-              {job.bullets.map((b, j) => (
-                <li key={j} style={{ fontSize: 13.5, lineHeight: 1.55, marginBottom: 3 }}>{b}</li>
-              ))}
-            </ul>
+            {/* Bullet text with inline highlights */}
+            <p style={{
+              margin: 0,
+              fontSize: 12,
+              lineHeight: 1.55,
+              color: '#333',
+              fontFamily: "'Manrope', sans-serif",
+              fontWeight: 500,
+            }}>
+              <InlineHighlight text={e.text} keywords={addedKeywords} />
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Skills */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#1a1a1a', borderBottom: '1px solid #111', paddingBottom: 3, marginBottom: 8 }}>Skills</div>
-        <p style={{ fontSize: 13.5, lineHeight: 1.7, margin: 0 }}>{data.skills.join('  ·  ')}</p>
-      </div>
-
-      {/* Education */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#1a1a1a', borderBottom: '1px solid #111', paddingBottom: 3, marginBottom: 8 }}>Education</div>
-        <p style={{ fontSize: 13.5, margin: 0 }}>{data.education}</p>
+      {/* Footer keyword pills */}
+      <div style={{ padding: '12px 16px', borderTop: `1px solid ${line}`, display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+        {addedKeywords.map(k => (
+          <span key={k} style={{ fontSize: 11, fontWeight: 600, color: accent, background: accentSoft, border: `1px solid ${accentBorder}`, padding: '3px 8px', borderRadius: 6 }}>✓ {k}</span>
+        ))}
       </div>
     </div>
   );
 }
 
-// LaTeX source generator
+// Inline bold highlighter: keywords + impact numbers, bold black only
+function Highlighted({ text, keywords }: { text: string; keywords: string[] }) {
+  const segments = splitWithBold(text, keywords);
+  return (
+    <>
+      {segments.map((seg, i) =>
+        seg.highlighted
+          ? <strong key={i} style={{ fontWeight: 700, color: '#111' }}>{seg.text}</strong>
+          : <span key={i}>{seg.text}</span>
+      )}
+    </>
+  );
+}
+
+// Skills line: "Category: items" → bold category prefix + inline bold for keywords/impact
+function SkillLine({ text, keywords, serif }: { text: string; keywords: string[]; serif: string }) {
+  const colon = text.indexOf(':');
+  if (colon > 0 && colon < 30) {
+    const cat = text.slice(0, colon + 1);
+    const rest = text.slice(colon + 1);
+    return (
+      <div style={{ fontSize: 10.5, lineHeight: 1.7, color: '#222', fontFamily: serif }}>
+        <span style={{ fontWeight: 700 }}>{cat}</span>
+        <Highlighted text={rest} keywords={keywords} />
+      </div>
+    );
+  }
+  return (
+    <div style={{ fontSize: 10.5, lineHeight: 1.7, color: '#222', fontFamily: serif }}>
+      <Highlighted text={text} keywords={keywords} />
+    </div>
+  );
+}
+
+function SectionHead({ label, serif }: { label: string; serif: string }) {
+  return (
+    <div style={{ marginBottom: 8, marginTop: 2 }}>
+      <span style={{
+        fontFamily: serif,
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase' as const,
+        fontVariant: 'small-caps',
+        color: '#111',
+        display: 'block',
+        marginBottom: 3,
+      }}>{label}</span>
+      <div style={{ height: 1, background: '#111' }} />
+    </div>
+  );
+}
+
+// HTML resume preview — matches the reference ATS LaTeX template (single-column, centered header)
+function ResumePage({ data, addedKeywords = [] }: { data: ResumeData; addedKeywords?: string[] }) {
+  const serif = "'Georgia', 'Times New Roman', serif";
+  const entryRow = (left: React.ReactNode, right: React.ReactNode) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+      <div>{left}</div>
+      <div style={{ whiteSpace: 'nowrap', fontSize: 11, color: '#333', fontStyle: 'italic' }}>{right}</div>
+    </div>
+  );
+
+  return (
+    <div className="rl-pdf-page" style={{
+      background: '#fff',
+      width: '100%',
+      maxWidth: 760,
+      margin: '0 auto',
+      fontFamily: serif,
+      fontSize: 11,
+      color: '#1a1a1a',
+      boxShadow: '0 16px 48px -18px rgba(16,19,28,0.22)',
+      border: '1px solid #e6e7ec',
+      borderRadius: 4,
+      padding: '40px 48px',
+      lineHeight: 1.45,
+    }}>
+
+      {/* ── Centered Header ── */}
+      <div style={{ textAlign: 'center', marginBottom: 14 }}>
+        <div style={{
+          fontFamily: serif,
+          fontSize: 26,
+          fontWeight: 700,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase' as const,
+          fontVariant: 'small-caps',
+          marginBottom: 5,
+        }}>{data.name}</div>
+        {/* Contact row */}
+        <div style={{ fontSize: 10.5, color: '#333', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 0 }}>
+          {data.contact.map((c, i) => (
+            <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              {i > 0 && <span style={{ margin: '0 7px', color: '#777' }}>|</span>}
+              {c}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Summary ── */}
+      {data.summary && (
+        <div style={{ marginBottom: 12 }}>
+          <SectionHead label="Summary" serif={serif} />
+          <p style={{ fontSize: 10.5, lineHeight: 1.6, margin: 0, color: '#222' }}>
+            <Highlighted text={data.summary} keywords={addedKeywords} />
+          </p>
+        </div>
+      )}
+
+      {/* ── Experience ── */}
+      {data.experience.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <SectionHead label="Experience" serif={serif} />
+          {data.experience.map((job, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              {entryRow(
+                <span style={{ fontWeight: 700, fontSize: 11.5 }}>{job.org}</span>,
+                <span>{job.location ?? ''}</span>
+              )}
+              {entryRow(
+                <span style={{ fontStyle: 'italic', fontSize: 10.5, color: '#444' }}>{job.role}</span>,
+                <span style={{ fontStyle: 'italic', fontSize: 10.5 }}>{job.dates}</span>
+              )}
+              <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+                {job.bullets.map((b, j) => (
+                  <li key={j} style={{ fontSize: 10.5, lineHeight: 1.55, marginBottom: 2, color: '#222' }}>
+                    <Highlighted text={b} keywords={addedKeywords} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Projects ── */}
+      {data.projects && data.projects.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <SectionHead label="Projects" serif={serif} />
+          {data.projects.map((proj, i) => (
+            <div key={i} style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                <div style={{ fontSize: 10.5 }}>
+                  <span style={{ fontWeight: 700 }}>{proj.name}</span>
+                  <span style={{ fontStyle: 'italic', color: '#555', marginLeft: 4 }}>| {proj.tech}</span>
+                </div>
+                {proj.link && <span style={{ fontSize: 10, color: '#6366f1', fontStyle: 'italic', whiteSpace: 'nowrap' }}>{proj.link}</span>}
+              </div>
+              <ul style={{ margin: '3px 0 0', paddingLeft: 18 }}>
+                {proj.bullets.map((b, j) => (
+                  <li key={j} style={{ fontSize: 10.5, lineHeight: 1.55, marginBottom: 2, color: '#222' }}>
+                    <Highlighted text={b} keywords={addedKeywords} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Technical Skills ── */}
+      <div style={{ marginBottom: 12 }}>
+        <SectionHead label="Technical Skills" serif={serif} />
+        <div>
+          {data.skills.map((s, i) => (
+            <SkillLine key={i} text={s} keywords={addedKeywords} serif={serif} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── Education ── */}
+      <div style={{ marginBottom: 12 }}>
+        <SectionHead label="Education" serif={serif} />
+        <p style={{ fontSize: 10.5, lineHeight: 1.6, margin: 0, color: '#222' }}>{data.education}</p>
+      </div>
+
+    </div>
+  );
+}
+
+// LaTeX source generator — matches the reference ATS-optimized template
 function buildLatex(data: ResumeData): string {
-  const exp = data.experience.map(job =>
-    `\\textbf{${job.role}} \\textit{${job.org}} \\hfill ${job.dates}\\\\\n\\begin{itemize}\n${job.bullets.map(b => `  \\item ${b}`).join('\n')}\n\\end{itemize}\n`
-  ).join('\n');
+  const esc = (s: string) => s
+    .replace(/&/g, '\\&')
+    .replace(/%/g, '\\%')
+    .replace(/#/g, '\\#')
+    .replace(/~/g, '\\textasciitilde{}')
+    .replace(/\^/g, '\\textasciicircum{}');
 
-  return `\\documentclass[11pt]{article}
-\\usepackage[margin=0.9in]{geometry}
-\\usepackage{newtxtext}
-\\usepackage{enumitem,titlesec}
-\\titleformat{\\section}{\\scshape\\large}{}{0em}{}[\\titlerule]
+  const expSection = data.experience.map(job => {
+    const bullets = job.bullets.map(b => `        \\resumeItem{${esc(b)}}`).join('\n');
+    return `    \\resumeSubheading
+      {${esc(job.org)}}{${esc(job.location ?? '')}}
+      {${esc(job.role)}}{${esc(job.dates)}}
+      \\resumeItemListStart
+${bullets}
+      \\resumeItemListEnd`;
+  }).join('\n\n');
 
+  const projSection = (data.projects ?? []).map(proj => {
+    const bullets = proj.bullets.map(b => `        \\resumeItem{${esc(b)}}`).join('\n');
+    const heading = `\\textbf{${esc(proj.name)}} $|$ \\emph{${esc(proj.tech)}}`;
+    const link = proj.link ? `\\href{${esc(proj.link)}}{\\underline{${esc(proj.link)}}}` : '';
+    return `    \\resumeProjectHeading
+        {${heading}}
+        {${link}}
+      \\resumeItemListStart
+${bullets}
+      \\resumeItemListEnd`;
+  }).join('\n\n');
+
+  const skillsLines = data.skills.map(s => `     \\textbf{${esc(s.split(':')[0]?.trim() ?? 'Skills')}:} ${esc(s.split(':').slice(1).join(':').trim() || s)}`).join(' \\\\\n');
+
+  return `%-------------------------
+% ATS-Optimized Resume
+% Compiler: XeLaTeX or pdfLaTeX
+%-------------------------
+\\documentclass[letterpaper,10.5pt]{article}
+
+\\usepackage[empty]{fullpage}
+\\usepackage{titlesec}
+\\usepackage[usenames,dvipsnames]{color}
+\\usepackage{enumitem}
+\\usepackage[hidelinks]{hyperref}
+\\usepackage{fancyhdr}
+\\usepackage{tabularx}
+
+% ---------- PAGE STYLE ----------
+\\pagestyle{fancy}
+\\fancyhf{}
+\\fancyfoot{}
+\\renewcommand{\\headrulewidth}{0pt}
+\\renewcommand{\\footrulewidth}{0pt}
+
+% Margins
+\\addtolength{\\oddsidemargin}{-0.5in}
+\\addtolength{\\evensidemargin}{-0.5in}
+\\addtolength{\\textwidth}{1in}
+\\addtolength{\\topmargin}{-.65in}
+\\addtolength{\\textheight}{1.3in}
+
+\\urlstyle{same}
+\\raggedbottom
+\\raggedright
+\\setlength{\\tabcolsep}{0in}
+
+% ---------- SECTION FORMATTING ----------
+\\titleformat{\\section}{
+  \\vspace{-4pt}\\scshape\\raggedright\\large
+}{}{0em}{}[\\color{black}\\titlerule \\vspace{-5pt}]
+
+% ---------- CUSTOM COMMANDS ----------
+\\newcommand{\\resumeItem}[1]{
+  \\item\\small{#1 \\vspace{-2pt}}
+}
+
+\\newcommand{\\resumeSubheading}[4]{
+  \\vspace{-2pt}\\item
+    \\begin{tabular*}{0.97\\textwidth}[t]{l@{\\extracolsep{\\fill}}r}
+      \\textbf{#1} & #2 \\\\
+      \\textit{\\small#3} & \\textit{\\small #4} \\\\
+    \\end{tabular*}\\vspace{-7pt}
+}
+
+\\newcommand{\\resumeProjectHeading}[2]{
+    \\item
+    \\begin{tabular*}{0.97\\textwidth}{l@{\\extracolsep{\\fill}}r}
+      \\small#1 & #2 \\\\
+    \\end{tabular*}\\vspace{-7pt}
+}
+
+\\newcommand{\\resumeSubHeadingListStart}{\\begin{itemize}[leftmargin=0.15in, label={}]}
+\\newcommand{\\resumeSubHeadingListEnd}{\\end{itemize}}
+\\newcommand{\\resumeItemListStart}{\\begin{itemize}}
+\\newcommand{\\resumeItemListEnd}{\\end{itemize}\\vspace{-5pt}}
+
+% ======================================================
+%                     DOCUMENT START
+% ======================================================
 \\begin{document}
+
+% ---------- HEADER ----------
 \\begin{center}
-  {\\LARGE \\textbf{${data.name}}}\\\\[2pt]
-  \\textit{${data.title}}\\\\[4pt]
-  ${data.contact.join(' $\\cdot$ ')}
+    {\\Huge \\scshape \\textbf{${esc(data.name)}}} \\\\ \\vspace{4pt}
+    \\small
+    ${data.contact.join(' \\quad $|$ \\quad ')}
 \\end{center}
 
-\\section*{Summary}
-${data.summary}
+% ---------- SUMMARY ----------
+\\section{Summary}
+${esc(data.summary)}
 
-\\section*{Experience}
-${exp}
-\\section*{Skills}
-${data.skills.join(' $\\cdot$ ')}
+% ---------- EXPERIENCE ----------
+\\section{Experience}
+  \\resumeSubHeadingListStart
 
-\\section*{Education}
-${data.education}
+${expSection}
+
+  \\resumeSubHeadingListEnd
+${(data.projects ?? []).length > 0 ? `
+% ---------- PROJECTS ----------
+\\section{Projects}
+    \\resumeSubHeadingListStart
+
+${projSection}
+
+    \\resumeSubHeadingListEnd` : ''}
+
+% ---------- SKILLS ----------
+\\section{Technical Skills}
+ \\begin{itemize}[leftmargin=0.15in, label={}]
+    \\small{\\item{
+${skillsLines}
+    }}
+ \\end{itemize}
+
+% ---------- EDUCATION ----------
+\\section{Education}
+  \\resumeSubHeadingListStart
+    \\resumeSubheading
+      {${esc(data.education)}}{}{}{}
+  \\resumeSubHeadingListEnd
+
 \\end{document}`;
 }
 
@@ -646,32 +981,29 @@ export default function AnalyzePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Manrope', sans-serif" }}>
-      {/* Sticky nav */}
-      <div className="rl-noprint" style={{ position: 'sticky', top: 0, zIndex: 20, background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${line}` }}>
-        <div className="max-w-285 mx-auto px-4 md:px-8 flex items-center justify-between h-16">
-          <Logo onClick={() => router.push('/')} />
-          <div className="flex items-center gap-2 md:gap-4.5">
-            {screen !== 'input' && screen !== 'analyzing' && (
-              <div className="flex gap-1 sm:gap-1.5">
-                {(['input', 'results', 'rewrite'] as const).map((s, i) => {
-                  const active = screen === s || (s === 'rewrite' && screen === 'rewriting');
-                  const done = (s === 'input' && ['results', 'rewriting', 'rewrite', 'analyzing'].includes(screen)) ||
-                    (s === 'results' && ['rewriting', 'rewrite'].includes(screen));
-                  return (
-                    <div key={s} className="flex items-center gap-1 sm:gap-1.5">
-                      {i > 0 && <div className="w-3.5 sm:w-5 h-px" style={{ background: line }} />}
-                      <div style={{ width: 28, height: 28, borderRadius: 99, display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 700, background: done ? green : (active ? accent : line), color: (done || active) ? '#fff' : sub, transition: 'all .2s' }}>{done ? '✓' : i + 1}</div>
-                      <span className={active ? '' : 'hidden sm:inline'} style={{ fontSize: 12.5, fontWeight: 600, color: active ? ink : sub }}>{s === 'input' ? 'Input' : s === 'results' ? 'Results' : 'Rewrite'}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <span className="hidden sm:inline" style={{ fontSize: 13.5, color: sub, fontWeight: 600 }}>Hi, {user.name.split(' ')[0]}</span>
-            <button onClick={() => router.push('/')} style={{ fontFamily: "'Manrope', sans-serif", fontSize: 13, fontWeight: 700, color: sub, background: 'transparent', border: `1px solid ${line}`, borderRadius: 8, padding: '7px 13px', cursor: 'pointer', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}>Home</button>
+      <AppNav />
+
+      {/* Step indicator — only shown after input screen */}
+      {screen !== 'input' && screen !== 'analyzing' && (
+        <div className="rl-noprint" style={{ borderBottom: `1px solid ${line}`, background: soft }}>
+          <div className="max-w-285 mx-auto px-4 md:px-8 flex items-center justify-center gap-2 sm:gap-3 h-11">
+            {(['input', 'results', 'rewrite'] as const).map((s, i) => {
+              const active = screen === s || (s === 'rewrite' && screen === 'rewriting');
+              const done = (s === 'input' && ['results', 'rewriting', 'rewrite', 'analyzing'].includes(screen)) ||
+                (s === 'results' && ['rewriting', 'rewrite'].includes(screen));
+              return (
+                <div key={s} className="flex items-center gap-1 sm:gap-2">
+                  {i > 0 && <div className="w-4 sm:w-6 h-px" style={{ background: line }} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 99, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700, background: done ? green : (active ? accent : line), color: (done || active) ? '#fff' : sub, transition: 'all .2s' }}>{done ? '✓' : i + 1}</div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: active ? ink : sub, display: active ? 'inline' : undefined }} className={active ? '' : 'hidden sm:inline'}>{s === 'input' ? 'Input' : s === 'results' ? 'Results' : 'Rewrite'}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Screen router */}
       {screen === 'input' && (
